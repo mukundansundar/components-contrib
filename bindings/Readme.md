@@ -3,11 +3,11 @@
 Bindings provide a common way to trigger an application with events from external systems, or invoke an external system with optional data payloads.
 Bindings are great for event-driven, on-demand compute and help reduce boilerplate code.
 
-To get started with bindings visit the [How To Guide](https://github.com/dapr/docs/tree/master/howto#resources-bindings).
+To get started with bindings visit the [How To Guide](https://docs.dapr.io/developing-applications/building-blocks/bindings/howto-bindings/).
 
-To view all the currently supported bindings visit: [Dapr bindings](https://github.com/dapr/docs/tree/master/concepts/bindings#supported-bindings-and-specs).
+To view all the currently supported bindings visit: [Dapr bindings](https://docs.dapr.io/operations/components/setup-bindings/supported-bindings/).
 
-For detailed binding specs visit [Dapr binding specs](https://github.com/dapr/docs/tree/master/reference/specs/bindings).
+For detailed binding specs visit [Dapr binding specs](https://docs.dapr.io/operations/components/setup-bindings/supported-bindings/).
 
 ## Implementing a new binding
 
@@ -34,4 +34,11 @@ type OutputBinding interface {
 	Operations() []OperationKind
 }
 ```
-A spec is also needed in [Dapr docs](https://github.com/dapr/docs/tree/master/reference/specs/bindings).
+
+When creating an Output Binding, a list of `OperationKind` items needs to be returned.
+For example, if running a component that takes in a SQL query and returns a result set, the `OperationKind` can be `query`.
+
+While components are not restricted to a list of supported operations, it's best to use common ones if the operation kind falls under that operation definition.
+The list of common operations can be found [here](./requests.go).
+
+After implementing a binding, the specification docs need to be updated via a PR: [Dapr docs](https://docs.dapr.io/operations/components/setup-bindings/supported-bindings/).

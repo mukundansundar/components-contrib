@@ -14,11 +14,13 @@ const (
 	// DefaultCloudEventType is the default event type for an Dapr published event
 	DefaultCloudEventType = "com.dapr.event.sent"
 	// CloudEventsSpecVersion is the specversion used by Dapr for the cloud events implementation
-	CloudEventsSpecVersion = "0.3"
-	//ContentType is the Cloud Events HTTP content type
+	CloudEventsSpecVersion = "1.0"
+	// ContentType is the Cloud Events HTTP content type
 	ContentType = "application/cloudevents+json"
 	// DefaultCloudEventSource is the default event source
 	DefaultCloudEventSource = "Dapr"
+	// DefaultCloudEventDataContentType is the default content-type for the data attribute
+	DefaultCloudEventDataContentType = "text/plain"
 )
 
 // CloudEventsEnvelope describes the Dapr implementation of the Cloud Events spec
@@ -32,10 +34,11 @@ type CloudEventsEnvelope struct {
 	Data            interface{} `json:"data"`
 	Subject         string      `json:"subject"`
 	Topic           string      `json:"topic"`
+	PubsubName      string      `json:"pubsubname"`
 }
 
 // NewCloudEventsEnvelope returns CloudEventsEnvelope from data or a new one when data content was not
-func NewCloudEventsEnvelope(id, source, eventType, subject string, topic string, data []byte) *CloudEventsEnvelope {
+func NewCloudEventsEnvelope(id, source, eventType, subject string, topic string, pubsubName string, dataContentType string, data []byte) *CloudEventsEnvelope {
 	// defaults
 	if id == "" {
 		id = uuid.New().String()
@@ -49,6 +52,9 @@ func NewCloudEventsEnvelope(id, source, eventType, subject string, topic string,
 	if subject == "" {
 		subject = DefaultCloudEventSource
 	}
+	if dataContentType == "" {
+		dataContentType = DefaultCloudEventDataContentType
+	}
 
 	// check if JSON
 	var j interface{}
@@ -58,11 +64,12 @@ func NewCloudEventsEnvelope(id, source, eventType, subject string, topic string,
 		return &CloudEventsEnvelope{
 			ID:              id,
 			SpecVersion:     CloudEventsSpecVersion,
-			DataContentType: "text/plain",
+			DataContentType: dataContentType,
 			Source:          source,
 			Type:            eventType,
 			Subject:         subject,
 			Topic:           topic,
+			PubsubName:      pubsubName,
 			Data:            string(data),
 		}
 	}
@@ -79,6 +86,7 @@ func NewCloudEventsEnvelope(id, source, eventType, subject string, topic string,
 				Type:            getStrVal(m, "type"),
 				Subject:         getStrVal(m, "subject"),
 				Topic:           topic,
+				PubsubName:      pubsubName,
 				Data:            m["data"],
 			}
 			// check if CE is valid
@@ -97,6 +105,7 @@ func NewCloudEventsEnvelope(id, source, eventType, subject string, topic string,
 		Type:            eventType,
 		Subject:         subject,
 		Topic:           topic,
+		PubsubName:      pubsubName,
 		Data:            j,
 	}
 }
@@ -107,5 +116,6 @@ func getStrVal(m map[string]interface{}, key string) string {
 			return s
 		}
 	}
+
 	return ""
 }

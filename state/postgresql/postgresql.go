@@ -21,6 +21,7 @@ type PostgreSQL struct {
 // NewPostgreSQLStateStore creates a new instance of PostgreSQL state store
 func NewPostgreSQLStateStore(logger logger.Logger) *PostgreSQL {
 	dba := newPostgresDBAccess(logger)
+
 	return newPostgreSQLStateStore(logger, dba)
 }
 
@@ -53,6 +54,12 @@ func (p *PostgreSQL) Get(req *state.GetRequest) (*state.GetResponse, error) {
 	return p.dbaccess.Get(req)
 }
 
+// BulkGet performs a bulks get operations
+func (p *PostgreSQL) BulkGet(req []state.GetRequest) (bool, []state.BulkGetResponse, error) {
+	// TODO: replace with ExecuteMulti for performance
+	return false, nil, nil
+}
+
 // Set adds/updates an entity on store
 func (p *PostgreSQL) Set(req *state.SetRequest) error {
 	return p.dbaccess.Set(req)
@@ -64,10 +71,10 @@ func (p *PostgreSQL) BulkSet(req []state.SetRequest) error {
 }
 
 // Multi handles multiple transactions. Implements TransactionalStore.
-func (p *PostgreSQL) Multi(reqs []state.TransactionalRequest) error {
+func (p *PostgreSQL) Multi(request *state.TransactionalStateRequest) error {
 	var deletes []state.DeleteRequest
 	var sets []state.SetRequest
-	for _, req := range reqs {
+	for _, req := range request.Operations {
 		switch req.Operation {
 		case state.Upsert:
 			if setReq, ok := req.Request.(state.SetRequest); ok {

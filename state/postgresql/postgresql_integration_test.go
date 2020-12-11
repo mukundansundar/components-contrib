@@ -133,7 +133,6 @@ func TestPostgreSQLIntegration(t *testing.T) {
 // setGetUpdateDeleteOneItem validates setting one item, getting it, and deleting it.
 func setGetUpdateDeleteOneItem(t *testing.T, pgs *PostgreSQL) {
 	key := randomKey()
-	//value := `{"something": "DKbLaZwrlCAZ"}`
 	value := &fakeItem{Color: "yellow"}
 
 	setItem(t, pgs, key, value, "")
@@ -186,7 +185,7 @@ func deleteItemThatDoesNotExist(t *testing.T, pgs *PostgreSQL) {
 }
 
 func multiWithSetOnly(t *testing.T, pgs *PostgreSQL) {
-	var multiRequest []state.TransactionalRequest
+	var operations []state.TransactionalStateOperation
 	var setRequests []state.SetRequest
 	for i := 0; i < 3; i++ {
 		req := state.SetRequest{
@@ -194,13 +193,15 @@ func multiWithSetOnly(t *testing.T, pgs *PostgreSQL) {
 			Value: randomJSON(),
 		}
 		setRequests = append(setRequests, req)
-		multiRequest = append(multiRequest, state.TransactionalRequest{
+		operations = append(operations, state.TransactionalStateOperation{
 			Operation: state.Upsert,
 			Request:   req,
 		})
 	}
 
-	err := pgs.Multi(multiRequest)
+	err := pgs.Multi(&state.TransactionalStateRequest{
+		Operations: operations,
+	})
 	assert.Nil(t, err)
 
 	for _, set := range setRequests {
@@ -210,7 +211,7 @@ func multiWithSetOnly(t *testing.T, pgs *PostgreSQL) {
 }
 
 func multiWithDeleteOnly(t *testing.T, pgs *PostgreSQL) {
-	var multiRequest []state.TransactionalRequest
+	var operations []state.TransactionalStateOperation
 	var deleteRequests []state.DeleteRequest
 	for i := 0; i < 3; i++ {
 		req := state.DeleteRequest{Key: randomKey()}
@@ -222,13 +223,15 @@ func multiWithDeleteOnly(t *testing.T, pgs *PostgreSQL) {
 		deleteRequests = append(deleteRequests, req)
 
 		// Add the item to the multi transaction request
-		multiRequest = append(multiRequest, state.TransactionalRequest{
+		operations = append(operations, state.TransactionalStateOperation{
 			Operation: state.Delete,
 			Request:   req,
 		})
 	}
 
-	err := pgs.Multi(multiRequest)
+	err := pgs.Multi(&state.TransactionalStateRequest{
+		Operations: operations,
+	})
 	assert.Nil(t, err)
 
 	for _, delete := range deleteRequests {
@@ -237,7 +240,7 @@ func multiWithDeleteOnly(t *testing.T, pgs *PostgreSQL) {
 }
 
 func multiWithDeleteAndSet(t *testing.T, pgs *PostgreSQL) {
-	var multiRequest []state.TransactionalRequest
+	var operations []state.TransactionalStateOperation
 	var deleteRequests []state.DeleteRequest
 	for i := 0; i < 3; i++ {
 		req := state.DeleteRequest{Key: randomKey()}
@@ -249,7 +252,7 @@ func multiWithDeleteAndSet(t *testing.T, pgs *PostgreSQL) {
 		deleteRequests = append(deleteRequests, req)
 
 		// Add the item to the multi transaction request
-		multiRequest = append(multiRequest, state.TransactionalRequest{
+		operations = append(operations, state.TransactionalStateOperation{
 			Operation: state.Delete,
 			Request:   req,
 		})
@@ -263,13 +266,15 @@ func multiWithDeleteAndSet(t *testing.T, pgs *PostgreSQL) {
 			Value: randomJSON(),
 		}
 		setRequests = append(setRequests, req)
-		multiRequest = append(multiRequest, state.TransactionalRequest{
+		operations = append(operations, state.TransactionalStateOperation{
 			Operation: state.Upsert,
 			Request:   req,
 		})
 	}
 
-	err := pgs.Multi(multiRequest)
+	err := pgs.Multi(&state.TransactionalStateRequest{
+		Operations: operations,
+	})
 	assert.Nil(t, err)
 
 	for _, delete := range deleteRequests {
@@ -520,6 +525,7 @@ func getItem(t *testing.T, pgs *PostgreSQL, key string) (*state.GetResponse, *fa
 	assert.NotNil(t, response)
 	outputObject := &fakeItem{}
 	_ = json.Unmarshal(response.Data, outputObject)
+
 	return response, outputObject
 }
 
@@ -544,6 +550,7 @@ func storeItemExists(t *testing.T, key string) bool {
 	statement := fmt.Sprintf(`SELECT EXISTS (SELECT FROM %s WHERE key = $1)`, tableName)
 	err = db.QueryRow(statement, key).Scan(&exists)
 	assert.Nil(t, err)
+
 	return exists
 }
 
@@ -554,6 +561,7 @@ func getRowData(t *testing.T, key string) (returnValue string, insertdate sql.Nu
 
 	err = db.QueryRow(fmt.Sprintf("SELECT value, insertdate, updatedate FROM %s WHERE key = $1", tableName), key).Scan(&returnValue, &insertdate, &updatedate)
 	assert.Nil(t, err)
+
 	return returnValue, insertdate, updatedate
 }
 

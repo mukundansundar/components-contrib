@@ -19,7 +19,6 @@ import (
 
 	"github.com/dapr/components-contrib/state"
 	"github.com/dapr/dapr/pkg/logger"
-
 	uuid "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -92,6 +91,7 @@ func TestIntegrationCases(t *testing.T) {
 func getUniqueDBSchema() string {
 	uuid := uuid.New().String()
 	uuid = strings.ReplaceAll(uuid, "-", "")
+
 	return fmt.Sprintf("v%s", uuid)
 }
 
@@ -203,6 +203,7 @@ type numbericKeyGenerator struct {
 
 func (n *numbericKeyGenerator) NextKey() string {
 	val := atomic.AddInt32(&n.seed, 1)
+
 	return strconv.Itoa(int(val))
 }
 
@@ -371,9 +372,11 @@ func testMultiOperations(t *testing.T) {
 				modified := original.user
 				modified.FavoriteBeverage = beverageTea
 
-				localErr := store.Multi([]state.TransactionalRequest{
-					{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID}},
-					{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified}},
+				localErr := store.Multi(&state.TransactionalStateRequest{
+					Operations: []state.TransactionalStateOperation{
+						{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID}},
+						{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified}},
+					},
 				})
 				assert.Nil(t, localErr)
 				assertLoadedUserIsEqual(t, store, modified.ID, modified)
@@ -392,10 +395,12 @@ func testMultiOperations(t *testing.T) {
 				modified := toModify.user
 				modified.FavoriteBeverage = beverageTea
 
-				err = store.Multi([]state.TransactionalRequest{
-					{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID, ETag: toDelete.etag}},
-					{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified, ETag: toModify.etag}},
-					{Operation: state.Upsert, Request: state.SetRequest{Key: toInsert.ID, Value: toInsert}},
+				err = store.Multi(&state.TransactionalStateRequest{
+					Operations: []state.TransactionalStateOperation{
+						{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID, ETag: toDelete.etag}},
+						{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified, ETag: toModify.etag}},
+						{Operation: state.Upsert, Request: state.SetRequest{Key: toInsert.ID, Value: toInsert}},
+					},
 				})
 				assert.Nil(t, err)
 				assertLoadedUserIsEqual(t, store, modified.ID, modified)
@@ -414,9 +419,11 @@ func testMultiOperations(t *testing.T) {
 				modified := toModify.user
 				modified.FavoriteBeverage = beverageTea
 
-				err = store.Multi([]state.TransactionalRequest{
-					{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID, ETag: toDelete.etag}},
-					{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified, ETag: toModify.etag}},
+				err = store.Multi(&state.TransactionalStateRequest{
+					Operations: []state.TransactionalStateOperation{
+						{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID, ETag: toDelete.etag}},
+						{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified, ETag: toModify.etag}},
+					},
 				})
 				assert.Nil(t, err)
 				assertLoadedUserIsEqual(t, store, modified.ID, modified)
@@ -432,9 +439,11 @@ func testMultiOperations(t *testing.T) {
 				toDelete := loadedUsers[userIndex]
 				toInsert := user{keyGen.NextKey(), "Wont-be-inserted", "Beer"}
 
-				err = store.Multi([]state.TransactionalRequest{
-					{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID, ETag: invalidEtag}},
-					{Operation: state.Upsert, Request: state.SetRequest{Key: toInsert.ID, Value: toInsert}},
+				err = store.Multi(&state.TransactionalStateRequest{
+					Operations: []state.TransactionalStateOperation{
+						{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID, ETag: invalidEtag}},
+						{Operation: state.Upsert, Request: state.SetRequest{Key: toInsert.ID, Value: toInsert}},
+					},
 				})
 
 				assert.NotNil(t, err)
@@ -450,9 +459,11 @@ func testMultiOperations(t *testing.T) {
 				modified := toModify.user
 				modified.FavoriteBeverage = beverageTea
 
-				err = store.Multi([]state.TransactionalRequest{
-					{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID, ETag: invalidEtag}},
-					{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified}},
+				err = store.Multi(&state.TransactionalStateRequest{
+					Operations: []state.TransactionalStateOperation{
+						{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID, ETag: invalidEtag}},
+						{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified}},
+					},
 				})
 				assert.NotNil(t, err)
 				assertLoadedUserIsEqual(t, store, toDelete.ID, toDelete.user)
@@ -467,9 +478,11 @@ func testMultiOperations(t *testing.T) {
 				modified := toModify.user
 				modified.FavoriteBeverage = beverageTea
 
-				err = store.Multi([]state.TransactionalRequest{
-					{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID}},
-					{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified, ETag: invalidEtag}},
+				err = store.Multi(&state.TransactionalStateRequest{
+					Operations: []state.TransactionalStateOperation{
+						{Operation: state.Delete, Request: state.DeleteRequest{Key: toDelete.ID}},
+						{Operation: state.Upsert, Request: state.SetRequest{Key: modified.ID, Value: modified, ETag: invalidEtag}},
+					},
 				})
 
 				assert.NotNil(t, err)
@@ -707,7 +720,7 @@ func testInsertAndUpdateSetRecordDates(t *testing.T) {
 		assert.Nil(t, localErr)
 
 		assert.True(t, insertDate.Valid)
-		var insertDiff = float64(time.Now().UTC().Sub(insertDate.Time).Milliseconds())
+		insertDiff := float64(time.Now().UTC().Sub(insertDate.Time).Milliseconds())
 		assert.LessOrEqual(t, math.Abs(insertDiff), maxDiffInMs)
 		assert.False(t, updateDate.Valid)
 
@@ -729,7 +742,7 @@ func testInsertAndUpdateSetRecordDates(t *testing.T) {
 		assert.Equal(t, originalInsertTime, insertDate.Time)
 
 		assert.True(t, updateDate.Valid)
-		var updateDiff = float64(time.Now().UTC().Sub(updateDate.Time).Milliseconds())
+		updateDiff := float64(time.Now().UTC().Sub(updateDate.Time).Milliseconds())
 		assert.LessOrEqual(t, math.Abs(updateDiff), maxDiffInMs)
 	})
 }
