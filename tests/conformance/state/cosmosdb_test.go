@@ -1,3 +1,5 @@
+// +build conf
+
 package state
 
 import (
@@ -5,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/dapr/components-contrib/state"
 	"github.com/dapr/components-contrib/state/azure/cosmosdb"
@@ -38,5 +41,11 @@ func TestCosmosDB(t *testing.T) {
 	}()
 	runWithStateStore(t, "cosmodb", func() state.Store {
 		return cosmosdb.NewCosmosDBStateStore(logger.NewLogger("test-cosmos"))
+	}, TestConfig{
+		maxInitDurationInMs:   time.Duration(1000) * time.Millisecond,
+		maxSetDurationInMs:    time.Duration(1000) * time.Millisecond,
+		maxDeleteDurationInMs: time.Duration(1000) * time.Millisecond,
+		maxGetDurationInMs:    time.Duration(1000) * time.Millisecond,
+		numBulkRequests:       10,
 	})
 }
