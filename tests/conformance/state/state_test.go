@@ -17,10 +17,10 @@ type ValueType struct {
 }
 
 const (
-	maxInitDurationInMs   = 10
-	maxSetDurationInMs    = 10
-	maxGetDurationInMs    = 10
-	maxDeleteDurationInMs = 10
+	maxInitDurationInMs   = 1000
+	maxSetDurationInMs    = 1000
+	maxGetDurationInMs    = 1000
+	maxDeleteDurationInMs = 1000
 	numBulkRequests       = 10
 )
 
