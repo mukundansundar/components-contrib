@@ -24,7 +24,7 @@ func LoadComponents(componentPath string) ([]v1alpha1.Component, error) {
 func ConvertMetadataToProperties(items []v1alpha1.MetadataItem) map[string]string {
 	properties := map[string]string{}
 	for _, c := range items {
-		properties[c.Name] = c.Value
+		properties[c.Name] = c.Value.String()
 	}
 	return properties
 }
