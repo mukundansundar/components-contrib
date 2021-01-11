@@ -1,4 +1,4 @@
-// +build conf
+// +build conf-dev
 
 package state
 
